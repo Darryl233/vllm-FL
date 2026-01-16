@@ -1,0 +1,114 @@
+name: GPU Silicon Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.actor }}
+  cancel-in-progress: true
+
+jobs:
+  ubuntu-gpu-smoke-test:
+    runs-on: self-hosted
+    timeout-minutes: 60
+    container:
+      image: localhost:5000/flagos:vllm-cuda-amd64-test-20251216
+      ports:
+        - 80
+      volumes:
+        - /home/flagscale_cicd/docker/docker_build/docker_tokenizers:/home/gitlab-runner/tokenizers
+        - /home/flagscale_cicd/docker/docker_build/docker_data:/home/gitlab-runner/data
+      options: --gpus all --shm-size=500g --privileged --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 --ulimit nofile=65535:65535 --user root
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          ssh-strict: true
+          ssh-user: git
+          persist-credentials: true
+          clean: true
+          sparse-checkout-cone-mode: true
+          fetch-tags: false
+          show-progress: true
+          lfs: false
+          submodules: false
+          set-safe-directory: true
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            requirements/**/*.txt
+            pyproject.toml
+          python-version: '3.12'
+
+      - name: Create virtual environment
+        run: |
+          uv venv
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies and build vLLM
+        run: |
+          uv pip install -r requirements/cuda.txt --index-strategy unsafe-best-match
+          uv pip install -e . -vvv
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 4
+
+      - name: Verify installation
+        shell: bash
+        run: |
+          python -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
+
+      - name: Smoke test vllm serve
+        shell: bash
+        run: |
+          source .github/workflows/scripts/gpu_check.sh
+          wait_for_gpu
+
+          # Start server in background
+          vllm serve /home/gitlab-runner/data/Qwen2.5-7B-Instruct \
+            --gpu-memory-utilization=0.9 \
+            --max-model-len=32768 \
+            --max-num-seqs=256 \
+            --port=8000 \
+            --trust-remote-code \
+            --enable-chunked-prefill &
+
+          SERVER_PID=$!
+
+          # Wait for server to start
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/health > /dev/null; then
+              echo "Server started successfully"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Server failed to start"
+              kill "$SERVER_PID"
+              exit 1
+            fi
+            sleep 3
+          done
+
+          # Test health endpoint
+          curl -f http://localhost:8000/health
+
+          # Test completion
+          curl -f http://localhost:8000/v1/completions \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "/home/gitlab-runner/data/Qwen2.5-7B-Instruct",
+              "prompt": "Hello",
+              "max_tokens": 5
+            }'
+
+          # Cleanup
+          kill "$SERVER_PID"

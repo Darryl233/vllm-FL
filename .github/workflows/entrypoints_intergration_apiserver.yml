@@ -1,0 +1,63 @@
+name: Entrypoints Integration Test (API Server)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'vllm/**'
+      - 'tests/entrypoints/openai/**'
+      - 'tests/entrypoints/test_chat_utils.py'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'vllm/**'
+      - 'tests/entrypoints/openai/**'
+      - 'tests/entrypoints/test_chat_utils.py'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.actor }}
+  cancel-in-progress: true
+
+jobs:
+  ubuntu-gpu-smoke-test:
+    runs-on: self-hosted
+    container:
+      image: localhost:5000/flagos:vllm-cuda-amd64-test-20251216
+      ports:
+        - 80
+      volumes:
+        - /home/flagscale_cicd/docker/docker_build/docker_tokenizers:/home/gitlab-runner/tokenizers
+        - /home/flagscale_cicd/docker/docker_build/docker_data:/home/gitlab-runner/data
+      options: --gpus all --shm-size=500g --privileged --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 --ulimit nofile=65535:65535 --user root
+
+    env:
+      VLLM_WORKER_MULTIPROC_METHOD: spawn
+      PYTHONPATH: /vllm-workspace
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          ssh-strict: true
+          ssh-user: git
+          persist-credentials: true
+          clean: true
+          sparse-checkout-cone-mode: true
+          fetch-tags: false
+          show-progress: true
+          lfs: false
+          submodules: false
+          set-safe-directory: true
+          retry-on-intr: fail=5,delay=180000
+
+      - name: Entrypoints Integration Test (API Server)
+        timeout-minutes: 130
+        working-directory: ${{ github.workspace }}/tests
+        run: |
+          pytest -v -s entrypoints/openai/test_collective_rpc.py # PYTHONPATH is needed to import custom Worker extension
+          pytest -v -s entrypoints/openai --ignore=entrypoints/openai/test_chat_with_tool_reasoning.py --ignore=entrypoints/openai/test_oot_registration.py --ignore=entrypoints/openai/test_tensorizer_entrypoint.py --ignore=entrypoints/openai/correctness/ --ignore=entrypoints/openai/test_collective_rpc.py --ignore=entrypoints/openai/tool_parsers/
+          pytest -v -s entrypoints/test_chat_utils.py

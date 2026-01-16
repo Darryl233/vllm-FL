@@ -1,0 +1,128 @@
+# Run this on each commit
+# whether to run this on vllm against the torch nightly pipeline
+name: Basic Correctness Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.actor }}
+  cancel-in-progress: true
+
+jobs:
+  basic-correctness-test:
+    runs-on: [ self-hosted, amdexperimental ]
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: localhost:5000/flagos:vllm-cuda-amd64-test-20251216
+      ports:
+        - 80:80
+      volumes:
+        - /home/flagscale_cicd/docker/docker_build/docker_tokenizers:/home/gitlab-runner/tokenizers
+        - /home/flagscale_cicd/docker/docker_build/docker_data:/home/gitlab-runner/data
+        - /home/yefubao/tmp/pip-cache:/root/.cache/pip
+      options: >-
+        --gpus all 
+        --shm-size=500g 
+        --privileged 
+        --ipc=host 
+        --ulimit memlock=-1 
+        --ulimit stack=67108864 
+        --ulimit nofile=65535:65535 
+        --user root
+
+    env:
+      PYTHONUNBUFFERED: "1"
+      PYTEST_ADDOPTS: "-v -s"
+      VLLM_WORKER_MULTIPROC_METHOD: spawn
+      CMAKE_BUILD_PARALLEL_LEVEL: "8"
+      MAX_JOBS: "8"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          ssh-strict: true
+          ssh-user: git
+          persist-credentials: true
+          clean: true
+          sparse-checkout-cone-mode: true
+          fetch-tags: false
+          show-progress: true
+          lfs: false
+          submodules: false
+          set-safe-directory: true
+
+      - name: Pre-Check Environment
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          echo "===== System Info ====="
+          uname -a
+          python3 --version || (echo "❌ python3 not found"; exit 1)
+          pip3 --version || (echo "❌ pip3 not found"; exit 1)
+
+          echo "===== GPU Info ====="
+          if command -v nvidia-smi &>/dev/null; then
+            nvidia-smi --query-gpu=index,name,memory.total,utilization.gpu --format=csv
+          else
+            echo "⚠️ GPU check skipped. nvidia-smi is not available in the current environment."
+            exit 1
+          fi
+
+          nvcc --version || echo "⚠️ nvcc not found (non-fatal for python-only install)"
+
+          echo "===== Disk Space ====="
+          df -h
+
+          echo "===== Available memory ====="
+          free -h
+
+          # ===== Mount Directory Check =====
+          [ -d "/home/gitlab-runner/tokenizers" ] || echo "⚠️ tokenizers directory not mounted"
+          [ -d "/home/gitlab-runner/data" ] || echo "⚠️ data directory not mounted"
+          [ -d "/root/.cache/pip" ] || mkdir -p /root/.cache/pip
+
+      - name: Install dependencies and build vLLM
+        run: |
+          # Install the torch-nightly dependency
+          bash tests/standalone_tests/pytorch_nightly_dependency.sh
+
+          # install vllm
+          pip install -e . -vvv
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 4
+
+      - name: Verify installation
+        shell: bash
+        run: |
+          python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
+
+      - name: GPU Usage Check / Verification
+        run: |
+          source .github/workflows/scripts/gpu_check.sh
+          wait_for_gpu
+
+      - name: Run test_cumem.py
+        # timeout-minutes: 30
+        run: |
+          pytest tests/basic_correctness/test_cumem.py
+
+      - name: Run test_basic_correctness.py
+        # timeout-minutes: 30
+        run: |
+          pytest tests/basic_correctness/test_basic_correctness.py
+
+      - name: Run test_cpu_offload.py
+        # timeout-minutes: 30
+        run: |
+          pytest tests/basic_correctness/test_cpu_offload.py

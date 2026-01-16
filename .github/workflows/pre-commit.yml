@@ -2,8 +2,12 @@ name: pre-commit
 
 on:
   pull_request:
-  push:
-    branches: [main]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -11,7 +11,7 @@ on:
 
 jobs:
   bc_lint:
-    if: github.repository_owner == 'vllm-project'
+    if: github.repository_owner == 'flagos-ai'
     runs-on: ubuntu-latest
     steps:
       - name: Run BC Lint Action
