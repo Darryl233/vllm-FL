@@ -27,7 +27,7 @@ env:
 
 jobs:
   pytorch-nightly-dependency:
-    runs-on: self-hosted
+    runs-on: [ self-hosted, Linux, X64, nviida, gpu-8 ]
     outputs:
       test_result: ${{ steps.dependency-check.outcome }}
 

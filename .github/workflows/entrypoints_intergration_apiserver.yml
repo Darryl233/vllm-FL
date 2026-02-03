@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   ubuntu-gpu-smoke-test:
-    runs-on: self-hosted
+    runs-on: [ self-hosted, Linux, X64, nviida, gpu-8 ]
     container:
       image: localhost:5000/flagos:vllm-cuda-amd64-test-20251216
       ports:

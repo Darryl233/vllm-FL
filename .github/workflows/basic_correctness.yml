@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   basic-correctness-test:
-    runs-on: [ self-hosted, amdexperimental ]
+    runs-on: [ self-hosted, Linux, X64, nviida, gpu-8 ]
     defaults:
       run:
         shell: bash

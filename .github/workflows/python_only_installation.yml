@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   python-only-install-test:
-    runs-on: [ self-hosted ]
+    runs-on: [ self-hosted, Linux, X64, nviida, gpu-8 ]
     defaults:
       run:
         shell: bash
