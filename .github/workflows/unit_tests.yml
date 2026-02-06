@@ -16,9 +16,9 @@ jobs:
       run:
         shell: bash
     runs-on: [ self-hosted, Linux, X64, gpu-8, nvidia ]
-    container:
-      image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
-      options: --gpus all --shm-size=500g --hostname vllm_fl_cicd --user root --ulimit nofile=65535:65535
+    # container:
+    #   image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
+    #   options: --gpus all --shm-size=500g --hostname vllm_fl_cicd --user root --ulimit nofile=65535:65535
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +36,6 @@ jobs:
           - plugins_tests
           - runai_model_streamer_test
           - ./
-      
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,6 +44,7 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
+          whoami
 
           YQ_VERSION="v4.45.1"
           JQ_VERSION="1.7.1"
