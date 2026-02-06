@@ -1,0 +1,138 @@
+unit-conf:
+  benchmarks:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/benchmarks/test_latency_cli.py::test_bench_latency
+      - tests/benchmarks/test_throughput_cli.py::test_bench_throughput
+      - tests/benchmarks/test_serve_cli.py::test_bench_serve
+      - tests/benchmarks/test_serve_cli.py::test_bench_serve_chat
+  compile:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/compile/test_basic_correctness.py::test_compile_correctness
+      - tests/compile/piecewise/test_full_cudagraph.py::test_full_cudagraph_with_invalid_backend
+      - tests/compile/piecewise/test_toy_llama.py::test_toy_llama
+      - tests/compile/test_async_tp.py::test_async_tp_pass_replace
+      - tests/compile/test_async_tp.py::test_async_tp_pass_correctness
+      - tests/compile/test_basic_correctness.py::test_compile_correctness
+      - tests/compile/test_config.py::test_use_cudagraphs_dynamic
+      - tests/compile/test_config.py::test_VLLM_DISABLE_COMPILE_CACHE
+      - tests/compile/test_config.py::test_use_cudagraphs
+      - tests/compile/test_config.py::test_dynamo_as_is
+      - tests/compile/test_config.py::test_no_compilation
+      - tests/compile/test_config.py::test_enforce_eager
+      - tests/compile/test_full_graph.py::test_full_graph
+      - tests/compile/test_full_graph.py::test_custom_compile_config
+      - tests/compile/test_functionalization.py::test_fix_functionalization
+      - tests/compile/test_fusion.py::test_fusion_rmsnorm_quant
+      - tests/compile/test_sequence_parallelism.py::test_sequence_parallelism_pass
+      - tests/compile/test_silu_mul_quant_fusion.py::test_fusion_silu_and_mul_quant
+      - tests/compile/piecewise/test_full_cudagraph.py::TestFullCUDAGraph::test_full_cudagraph
+  config:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/config/test_mp_reducer.py
+  cuda:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  detokenizer:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/detokenizer/test_disable_detokenization.py::test_computed_prefix_blocks
+      - tests/detokenizer/test_stop_strings.py::test_stop_strings
+      - tests/detokenizer/test_stop_reason.py::test_stop_reason
+  engine:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/engine/test_short_mm_context.py::test_context_length_too_short
+  entrypoints:
+    depth: all
+    ignore:
+      - tests/entrypoints/llm
+      - tests/entrypoints/offline_mode
+      - tests/entrypoints/openai
+      - tests/entrypoints/pooling
+    deselect:
+      - tests/entrypoints/test_chat_utils.py
+  model_executor:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/model_executor/test_model_load_with_params.py::test_model_loading_with_params
+      - tests/model_executor/test_model_load_with_params.py::test_roberta_model_loading_with_params
+      - tests/model_executor/test_model_load_with_params.py::test_facebook_roberta_model_loading_with_params
+      - tests/model_executor/test_weight_utils.py::test_hf_transfer_auto_activation
+      - tests/model_executor/test_weight_utils.py::test_download_weights_from_hf
+      - tests/model_executor/model_loader/test_sharded_state_loader.py::test_sharded_state_loader
+  models:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      --ignore=tests/models/fixtures
+      --ignore=tests/models/language
+      --ignore=tests/models/multimodal
+      --ignore=tests/models/quantization
+      - tests/models/test_initialization.py
+      - tests/models/test_oot_registration.py
+      - tests/models/test_registry.py::test_registry_imports
+      - tests/models/test_registry.py::test_registry_model_property
+      - tests/models/test_registry.py::test_registry_is_pp
+      - tests/models/test_registry.py::test_hf_registry_coverage
+      - tests/models/test_terratorch.py
+      - tests/models/test_transformers.py
+      - tests/models/test_vision.py::test_run_dp_sharded_vision_model
+      - tests/models/test_vision.py::test_run_dp_sharded_mrope_vision_model
+      - tests/models/test_vision.py::test_run_dp_sharded_mrope_vision_model_empty_input
+      - tests/models/test_vision.py::test_run_dp_sharded_mrope_vision_model_uneven_load
+  multimodal:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/multimodal/test_cache.py::test_ipc_enable_disable_consistency
+      - tests/multimodal/test_processing.py::test_limit_mm_per_prompt_dummy
+      - tests/multimodal/test_processing.py::test_limit_mm_per_prompt_apply
+      - tests/multimodal/test_processing.py::test_hf_processor_init_kwargs
+      - tests/multimodal/test_processing.py::test_hf_processor_call_kwargs
+      - tests/multimodal/test_registry.py::test_supports_multimodal_inputs
+  plugins_tests:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/plugins_tests/test_io_processor_plugins.py::test_prithvi_mae_plugin_offline
+      - tests/plugins_tests/test_platform_plugins.py::test_platform_plugins
+      - tests/plugins_tests/test_platform_plugins.py::test_oot_custom_op
+      - tests/plugins_tests/test_scheduler_plugins.py::test_scheduler_plugins_v1
+      - tests/plugins_tests/test_io_processor_plugins.py::test_prithvi_mae_plugin_online
+  runai_model_streamer_test:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - tests/runai_model_streamer_test/test_runai_model_streamer_loader.py::test_runai_model_loader_download_files
+      - tests/runai_model_streamer_test/test_runai_utils.py::test_runai_list_safetensors_local
+      - tests/runai_model_streamer_test/test_weight_utils.py::test_runai_model_loader
+  ./:
+    depth: 1
+    ignore:
+      - pass
+    deselect:
+      - tests/test_config.py
+      - tests/test_regression.py
+      - tests/test_version.py

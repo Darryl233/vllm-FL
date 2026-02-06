@@ -1,0 +1,96 @@
+name: Unit Tests CUDA
+
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.actor }}
+  cancel-in-progress: true
+
+jobs:
+  unit_test:
+    defaults:
+      run:
+        shell: bash
+    runs-on: [ self-hosted, Linux, X64, gpu-8, nvidia ]
+    container:
+      image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
+      options: --gpus all --shm-size=500g --hostname vllm_fl_cicd --user root --ulimit nofile=65535:65535
+    strategy:
+      fail-fast: false
+      matrix:
+        subset:
+          - benchmarks
+          - compile
+          - config
+          - cuda
+          - detokenizer
+          - engine
+          - entrypoints
+          - model_executor
+          - models
+          - multimodal
+          - plugins_tests
+          - runai_model_streamer_test
+          - ./
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install auxiliary tools
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+
+          YQ_VERSION="v4.45.1"
+          JQ_VERSION="1.7.1"
+          BIN_DIR="/usr/local/bin"
+
+          [ -w "$BIN_DIR" ] || { echo "Error: $BIN_DIR is not writable!"; exit 1; }
+
+          # Install mikefarah/yq (v4) for YAML parsing
+          echo "Installing yq $YQ_VERSION..."
+          curl -sSL --retry 3 "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_amd64" -o "$BIN_DIR/yq"
+          chmod +x "$BIN_DIR/yq"
+          yq --version
+
+          echo "Installing jq $JQ_VERSION..."
+          curl -sSL --retry 3 "https://github.com/jqlang/jq/releases/download/jq-$JQ_VERSION/jq-linux-amd64" -o "$BIN_DIR/jq"
+          chmod +x "$BIN_DIR/jq"
+          jq --version
+
+      - name: Load config for ${{ matrix.subset }}
+        id: config
+        run: |
+          set -euo pipefail
+
+          CONFIG_FILE=".github/configs/unit.yml"
+
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "❌ Error: Platform configuration file not found: $CONFIG_FILE"
+            echo "Available configs:"
+            ls -la .github/configs/
+            exit 1
+          fi
+
+           # Source the platform config loading script
+          source .github/scripts/load_config.sh
+
+          # Load configuration and group tests by task
+          load_config ${{ matrix.subset }}
+
+      - name: Run test for ${{ matrix.subset }}
+        run: |
+          ignore="${{ steps.config.outputs.ignore }}"
+          deselect="${{ steps.config.outputs.deselect }}"
+          test_files="${{ steps.config.outputs.test_files }}"
+
+          echo "ignore: $ignore"
+          echo "deselect: $deselect"
+          echo "test_files: $test_files"
+
+          torchrun --nproc_per_node=8 -m pytest -q -x -p no:warnings $ignore $deselect $test_files
