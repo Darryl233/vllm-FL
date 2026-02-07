@@ -1,0 +1,156 @@
+name: Pytorch Nightly Dependency Override Check
+
+on:
+  push:
+    branches: main
+    paths:
+      - 'requirements/nightly_torch_test.txt'
+      - 'tests/standalone_tests/pytorch_nightly_dependency.sh'
+      - '.github/workflows/pytorch_nightly_dependency.yml'
+  pull_request:
+    branches: main
+    paths:
+      - 'requirements/nightly_torch_test.txt'
+      - 'tests/standalone_tests/pytorch_nightly_dependency.sh'
+      - '.github/workflows/pytorch_nightly_dependency.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.actor }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  PIP_DEFAULT_TIMEOUT: "180"
+  PIP_NO_CACHE_DIR: "0"
+  LOG_DIR: "/tmp/nightly-logs"
+  SCRIPT_PATH: "./tests/standalone_tests/pytorch_nightly_dependency.sh"
+
+jobs:
+  pytorch-nightly-dependency:
+    runs-on: [ self-hosted, Linux, X64, gpu-8, nvidia ]
+    outputs:
+      test_result: ${{ steps.dependency-check.outcome }}
+
+    container:
+      image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
+      options: --gpus all --shm-size=500g --hostname flagscale_cicd --user root --ulimit nofile=65535:65535
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          ssh-strict: true
+          ssh-user: git
+          persist-credentials: true
+          clean: true
+          sparse-checkout-cone-mode: true
+          sparse-checkout: |
+            requirements/nightly_torch_test.txt
+            tests/standalone_tests/pytorch_nightly_dependency.sh
+          fetch-tags: false
+          show-progress: true
+          lfs: false
+          submodules: false
+          set-safe-directory: true
+
+      - name: Pre-Check Environment
+        timeout-minutes: 5
+        run: |
+          echo "===== System Info ====="
+          uname -a
+          python3 --version || python --version
+          pip3 --version || pip --version
+
+          echo "===== GPU Info ====="
+          if command -v nvidia-smi &>/dev/null; then
+            nvidia-smi
+          else
+            echo "⚠️ GPU check skipped. nvidia-smi is not available in the current environment."
+          fi
+
+          echo "===== Disk Space ====="
+          df -h
+
+          echo "===== Available memory ====="
+          free -h
+
+          mkdir -p ${{ env.LOG_DIR }} && chmod 777 ${{ env.LOG_DIR }}
+
+      - name: Validate Script and Requirements
+        timeout-minutes: 2
+        run: |
+          echo "===== Validate Critical Files ====="
+          if [ ! -f "./requirements/nightly_torch_test.txt" ]; then
+            echo "❌ Error: nightly_torch_test.txt not found!"
+            exit 1
+          fi
+
+          if [ ! -f "${{ env.SCRIPT_PATH}}" ]; then
+            echo "PWD: $PWD"
+            echo "SCRIPT_PATH: ${{ env.SCRIPT_PATH}}"
+            echo "❌ Error: pytorch_nightly_dependency.sh not found!"
+            exit 1
+          fi
+
+          if [ ! -x "${{ env.SCRIPT_PATH}}" ]; then
+            echo "⚠️ Adding execute permission to script..."
+            chmod +x "${{ env.SCRIPT_PATH}}"
+          fi
+
+      - name: Generate compatible short hashes
+        id: gen-sha
+        shell: bash
+        run: |
+          SHORT_SHA=${{ github.sha }}
+          if [ -z "$SHORT_SHA" ]; then
+            SHORT_SHA="unknown-sha"
+          else
+            SHORT_SHA=${SHORT_SHA:0:8}
+          fi
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+
+      - name: Pytorch Nightly Dependency Override Check
+        id: dependency-check
+        shell: bash
+        working-directory: tests
+        continue-on-error: true
+        run: |
+          echo "===== Script Content ====="
+          cat standalone_tests/pytorch_nightly_dependency.sh
+
+          bash standalone_tests/pytorch_nightly_dependency.sh 2>&1 | tee ${{ env.LOG_DIR }}/dependency_check.log
+          SCRIPT_EXIT_CODE=${PIPESTATUS[0]}
+
+          echo "===== End of check - $(date) ====="
+          echo "===== Final script exit status: $SCRIPT_EXIT_CODE ====="
+          echo "===== Inspection results (last 200 log entries) ====="
+          tail -100 ${{ env.LOG_DIR }}/dependency_check.log
+
+          exit $SCRIPT_EXIT_CODE
+
+      - name: Upload Nightly Dependency Logs
+        if: always()
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: pytorch-nightly-deps-log-${{ github.run_id }}-${{ env.SHORT_SHA }}
+          path: |
+            ${{ env.LOG_DIR }}/
+            ./requirements/nightly_torch_test.txt
+            ${{ env.SCRIPT_PATH}}
+          retention-days: 7
+          if-no-files-found: warn
+          compression-level: 6
+
+      - name: Print Fix Guide on Incompatibility
+        if: steps.dependency-check.outcome == 'failure'
+        run: |
+          echo "============================================"
+          echo "❌ PyTorch Nightly Dependency Check Failed!"
+          echo "============================================"
+          echo "1. Download the log artifact: pytorch-nightly-deps-log-${{ github.run_id }}-${{ env.SHORT_SHA }}"
+          echo "2. Analyze the 'dependency_check.log' file to identify incompatible packages."
+          echo "3. Add problematic packages to the whitelist in: /vllm/tools/generate_nightly_torch_test.py"
+          echo "4. Before re-running, test locally with the same container image first."
+          echo "5. If the issue persists, check for breaking changes in the PyTorch nightly release notes."
