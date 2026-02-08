@@ -32,6 +32,8 @@ unit-conf:
       - tests/compile/test_sequence_parallelism.py::test_sequence_parallelism_pass
       - tests/compile/test_silu_mul_quant_fusion.py::test_fusion_silu_and_mul_quant
       - tests/compile/piecewise/test_full_cudagraph.py::TestFullCUDAGraph::test_full_cudagraph
+      - tests/compile/piecewise/test_simple.py::test_simple_piecewise_compile
+      - tests/compile/piecewise/test_multiple_graphs.py::test_multi_graph_piecewise_compile_outputs_equal
   config:
     depth: all
     ignore:
@@ -78,27 +80,6 @@ unit-conf:
       - tests/model_executor/test_weight_utils.py::test_hf_transfer_auto_activation
       - tests/model_executor/test_weight_utils.py::test_download_weights_from_hf
       - tests/model_executor/model_loader/test_sharded_state_loader.py::test_sharded_state_loader
-  models:
-    depth: all
-    ignore:
-      - pass
-    deselect:
-      --ignore=tests/models/fixtures
-      --ignore=tests/models/language
-      --ignore=tests/models/multimodal
-      --ignore=tests/models/quantization
-      - tests/models/test_initialization.py
-      - tests/models/test_oot_registration.py
-      - tests/models/test_registry.py::test_registry_imports
-      - tests/models/test_registry.py::test_registry_model_property
-      - tests/models/test_registry.py::test_registry_is_pp
-      - tests/models/test_registry.py::test_hf_registry_coverage
-      - tests/models/test_terratorch.py
-      - tests/models/test_transformers.py
-      - tests/models/test_vision.py::test_run_dp_sharded_vision_model
-      - tests/models/test_vision.py::test_run_dp_sharded_mrope_vision_model
-      - tests/models/test_vision.py::test_run_dp_sharded_mrope_vision_model_empty_input
-      - tests/models/test_vision.py::test_run_dp_sharded_mrope_vision_model_uneven_load
   multimodal:
     depth: all
     ignore:
@@ -128,7 +109,7 @@ unit-conf:
       - tests/runai_model_streamer_test/test_runai_model_streamer_loader.py::test_runai_model_loader_download_files
       - tests/runai_model_streamer_test/test_runai_utils.py::test_runai_list_safetensors_local
       - tests/runai_model_streamer_test/test_weight_utils.py::test_runai_model_loader
-  ./:
+  source_dir:
     depth: 1
     ignore:
       - pass

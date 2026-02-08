@@ -15,14 +15,14 @@ jobs:
             try {
               // Get the PR author
               const prAuthor = context.payload.pull_request.user.login;
-              
+
               // Check if this is the author's first PR in this repository
               // Use GitHub's search API to find all PRs by this author
               const { data: searchResults } = await github.rest.search.issuesAndPullRequests({
                 q: `repo:${context.repo.owner}/${context.repo.repo} type:pr author:${prAuthor}`,
                 per_page: 100  
               });
-              
+
               const authorPRCount = searchResults.total_count;
               
               console.log(`Found ${authorPRCount} PRs by ${prAuthor}`);

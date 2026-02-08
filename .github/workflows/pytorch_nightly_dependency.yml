@@ -57,8 +57,11 @@ jobs:
 
       - name: Pre-Check Environment
         timeout-minutes: 5
+        shell: bash
         run: |
           echo "===== System Info ====="
+          source /opt/miniconda3/etc/profile.d/conda.sh
+          conda activate flagscale-inference
           uname -a
           python3 --version || python --version
           pip3 --version || pip --version
@@ -80,6 +83,7 @@ jobs:
 
       - name: Validate Script and Requirements
         timeout-minutes: 2
+        shell: bash
         run: |
           echo "===== Validate Critical Files ====="
           if [ ! -f "./requirements/nightly_torch_test.txt" ]; then
@@ -118,6 +122,8 @@ jobs:
         continue-on-error: true
         run: |
           echo "===== Script Content ====="
+          source /opt/miniconda3/etc/profile.d/conda.sh
+          conda activate flagscale-inference
           cat standalone_tests/pytorch_nightly_dependency.sh
 
           bash standalone_tests/pytorch_nightly_dependency.sh 2>&1 | tee ${{ env.LOG_DIR }}/dependency_check.log

@@ -12,7 +12,7 @@ on:
 jobs:
   bc_lint:
     if: github.repository_owner == 'flagos-ai'
-    runs-on: [ self-hosted, Linux, X64, gpu-8, nvidia ]
+    runs-on: ubuntu-latest
     steps:
       - name: Run BC Lint Action
         uses: pytorch/test-infra/.github/actions/bc-lint@main

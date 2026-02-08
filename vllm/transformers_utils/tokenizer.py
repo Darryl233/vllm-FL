@@ -84,7 +84,6 @@ def encode_tokens(
 
     return tokenizer.encode(text, **kw_args)
 
-
 def get_cached_tokenizer(tokenizer: AnyTokenizer) -> AnyTokenizer:
     """
     By default, transformers will recompute multiple tokenizer properties
@@ -95,8 +94,12 @@ def get_cached_tokenizer(tokenizer: AnyTokenizer) -> AnyTokenizer:
 
     tokenizer_all_special_ids = tokenizer.all_special_ids
     tokenizer_all_special_tokens = tokenizer.all_special_tokens
-    tokenizer_all_special_tokens_extended = (
-        tokenizer.all_special_tokens_extended)
+    
+    if hasattr(tokenizer, 'all_special_tokens_extended'):
+        tokenizer_all_special_tokens_extended = tokenizer.all_special_tokens_extended
+    else:
+        tokenizer_all_special_tokens_extended = tokenizer.all_special_tokens
+    
     tokenizer_vocab = tokenizer.get_vocab()
     tokenizer_len = len(tokenizer)
 
@@ -140,7 +143,6 @@ def get_cached_tokenizer(tokenizer: AnyTokenizer) -> AnyTokenizer:
 
     cached_tokenizer.__class__ = CachedTokenizer
     return cached_tokenizer
-
 
 def get_tokenizer(
     tokenizer_name: Union[str, Path],

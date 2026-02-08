@@ -17,7 +17,10 @@ jobs:
     runs-on: [ self-hosted, Linux, X64, gpu-8, nvidia ]
     timeout-minutes: 60
     container:
-      image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
+      image: localhost:5000/flagscale-cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
+      volumes:
+        - /home/flagscale_cicd/docker/docker_build/docker_tokenizers:/home/gitlab-runner/tokenizers
+        - /home/flagscale_cicd/docker/docker_build/docker_data:/home/gitlab-runner/data
       options: --gpus all --shm-size=500g --hostname flagscale_cicd --user root --ulimit nofile=65535:65535
 
     steps:
@@ -37,29 +40,22 @@ jobs:
           submodules: false
           set-safe-directory: true
 
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          cache-dependency-glob: |
-            requirements/**/*.txt
-            pyproject.toml
-          python-version: '3.12'
-
-      - name: Create virtual environment
-        run: |
-          uv venv
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-
       - name: Install dependencies and build vLLM
+        shell: bash
         run: |
-          uv pip install -r requirements/cuda.txt --index-strategy unsafe-best-match
-          uv pip install -e . -vvv
+          source /opt/miniconda3/etc/profile.d/conda.sh
+          conda activate flagscale-inference
+          pip install -r requirements/cuda.txt
+          pip install -r requirements/common.txt
+          pip install -e . -vvv
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
 
       - name: Verify installation
         shell: bash
         run: |
+          source /opt/miniconda3/etc/profile.d/conda.sh
+          conda activate flagscale-inference
           python -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
 
       - name: Smoke test vllm serve
@@ -67,6 +63,9 @@ jobs:
         run: |
           source .github/workflows/scripts/gpu_check.sh
           wait_for_gpu
+
+          source /opt/miniconda3/etc/profile.d/conda.sh
+          conda activate flagscale-inference
 
           # Start server in background
           vllm serve /home/gitlab-runner/data/Qwen2.5-7B-Instruct \
