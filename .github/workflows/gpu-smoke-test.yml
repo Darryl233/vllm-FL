@@ -61,7 +61,7 @@ jobs:
       - name: Smoke test vllm serve
         shell: bash
         run: |
-          source .github/workflows/scripts/gpu_check.sh
+          source .github/scripts/gpu_check.sh
           wait_for_gpu
 
           source /opt/miniconda3/etc/profile.d/conda.sh
