@@ -52,12 +52,12 @@ jobs:
 
           # Install mikefarah/yq (v4) for YAML parsing
           echo "Installing yq $YQ_VERSION..."
-          curl -sSL --retry 3 "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_amd64" -o "$BIN_DIR/yq"
+          curl -sSL --retry 3 -k "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_amd64" -o "$BIN_DIR/yq"
           chmod +x "$BIN_DIR/yq"
           yq --version
 
           echo "Installing jq $JQ_VERSION..."
-          curl -sSL --retry 3 "https://github.com/jqlang/jq/releases/download/jq-$JQ_VERSION/jq-linux-amd64" -o "$BIN_DIR/jq"
+          curl -sSL --retry 3 -k "https://github.com/jqlang/jq/releases/download/jq-$JQ_VERSION/jq-linux-amd64" -o "$BIN_DIR/jq"
           chmod +x "$BIN_DIR/jq"
           jq --version
 
