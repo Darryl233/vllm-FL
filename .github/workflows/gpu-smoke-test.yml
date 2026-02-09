@@ -17,7 +17,7 @@ jobs:
     runs-on: [ self-hosted, Linux, X64, gpu-8, nvidia ]
     timeout-minutes: 60
     container:
-      image: localhost:5000/flagscale-cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
+      image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
       volumes:
         - /home/flagscale_cicd/docker/docker_build/docker_tokenizers:/home/gitlab-runner/tokenizers
         - /home/flagscale_cicd/docker/docker_build/docker_data:/home/gitlab-runner/data

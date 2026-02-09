@@ -148,15 +148,3 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
           compression-level: 6
-
-      - name: Print Fix Guide on Incompatibility
-        if: steps.dependency-check.outcome == 'failure'
-        run: |
-          echo "============================================"
-          echo "❌ PyTorch Nightly Dependency Check Failed!"
-          echo "============================================"
-          echo "1. Download the log artifact: pytorch-nightly-deps-log-${{ github.run_id }}-${{ env.SHORT_SHA }}"
-          echo "2. Analyze the 'dependency_check.log' file to identify incompatible packages."
-          echo "3. Add problematic packages to the whitelist in: /vllm/tools/generate_nightly_torch_test.py"
-          echo "4. Before re-running, test locally with the same container image first."
-          echo "5. If the issue persists, check for breaking changes in the PyTorch nightly release notes."
