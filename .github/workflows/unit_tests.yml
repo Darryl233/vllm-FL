@@ -29,7 +29,6 @@ jobs:
           - cuda
           - detokenizer
           - engine
-          - entrypoints # fix
           - model_executor
           - multimodal
           - plugins_tests
@@ -64,11 +63,20 @@ jobs:
       - name: Install dependencies and build vLLM
         timeout-minutes: 90
         run: |
+          # Activate Conda Environment
           source /opt/miniconda3/etc/profile.d/conda.sh
           conda activate flagscale-inference
+
+          # Install Requirements
           pip install -r requirements/cuda.txt
           pip install -r requirements/common.txt
+
+          # Install vLLM in Editable Mode
           pip install -e . -vvv
+
+          # Verify vLLM Installation
+          python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
+          python -c 'import vllm._C; print("vllm._C imported successfully")'
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
 
