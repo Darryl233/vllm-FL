@@ -25,7 +25,7 @@ jobs:
         subset:
           - basic_correctness
           # - distributed
-          # - entrypoints_llm
+          - entrypoints_llm
           # - entrypoints_openai
           # - entrypoints_pooling
           # - entrypoints_offline_mode
@@ -79,9 +79,9 @@ jobs:
           # Install Requirements
           pip install -r requirements/cuda.txt
           pip install -r requirements/common.txt
-          pip install transformers==4.55.2 huggingface-hub==0.34.3
           # Install vLLM in Editable Mode
           pip install -e . -vvv
+          pip install transformers==4.55.2 huggingface-hub==0.34.3
 
           # Verify vLLM Installation
           python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')"

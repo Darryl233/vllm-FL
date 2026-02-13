@@ -74,6 +74,7 @@ def test_multi_chat(text_llm):
 
 
 @pytest.fixture(scope="function")
+@pytest.mark.skip(reason="Skipping due to model size too large")
 def vision_llm():
     # pytest caches the fixture so we use weakref.proxy to
     # enable garbage collection
