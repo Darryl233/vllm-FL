@@ -1,0 +1,127 @@
+functional-conf:
+  basic_correctness:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  distributed:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  entrypoints_llm:
+    path: tests/entrypoints/llm
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  entrypoints_openai:
+    path: tests/entrypoints/openai
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  entrypoints_pooling:
+    path: tests/entrypoints/pooling
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  entrypoints_offline_mode:
+    path: tests/entrypoints/offline_mode
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  evals:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  fastsafetensors_loader:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  kv_transfer:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  lora:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  mistral_tool_use:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  models:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  quantization:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  samplers:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  speculative_decoding:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  tensorizer_loader:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  tool_use:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  weight_loading:
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  v1_e2e:
+    path: tests/v1/e2e
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
+  v1_entrypoints:
+    path: tests/v1/entrypoints
+    depth: all
+    ignore:
+      - pass
+    deselect:
+      - pass
