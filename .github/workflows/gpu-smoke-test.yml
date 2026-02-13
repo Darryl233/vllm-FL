@@ -3,9 +3,9 @@ name: GPU Silicon Smoke Test
 on:
   push:
     branches:
-      - main
+      - main-dev
   pull_request:
-    branches: main
+    branches: main-dev
   workflow_dispatch:  # Manual trigger
 
 concurrency:
