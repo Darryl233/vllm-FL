@@ -28,7 +28,7 @@ jobs:
           - entrypoints_llm
           # - entrypoints_openai
           # - entrypoints_pooling
-          # - entrypoints_offline_mode
+          - entrypoints_offline_mode
           # - evals
           # - fastsafetensors_loader
           # - kv_transfer
@@ -41,7 +41,7 @@ jobs:
           # - tensorizer_loader
           # - tool_use
           # - weight_loading
-          # - v1_e2e
+          - v1_e2e
           # - v1_entrypoints
     steps:
       - name: Checkout code

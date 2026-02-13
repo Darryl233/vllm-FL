@@ -117,7 +117,8 @@ functional-conf:
     ignore:
       - pass
     deselect:
-      - pass
+      - tests/v1/e2e/test_correctness_sliding_window.py  # model size too large
+      - tests/v1/e2e/test_spec_decode.py  # model too many and sizes too large 
   v1_entrypoints:
     path: tests/v1/entrypoints
     depth: all
