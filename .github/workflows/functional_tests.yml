@@ -79,7 +79,7 @@ jobs:
           # Install Requirements
           pip install -r requirements/cuda.txt
           pip install -r requirements/common.txt
-
+          pip install transformers==4.55.2 huggingface-hub==0.34.3
           # Install vLLM in Editable Mode
           pip install -e . -vvv
 

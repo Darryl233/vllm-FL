@@ -4,7 +4,7 @@ functional-conf:
     ignore:
       - pass
     deselect:
-      - pass
+      - tests/basic_correctness/test_cpu_offload.py    # oom
   distributed:
     depth: all
     ignore:

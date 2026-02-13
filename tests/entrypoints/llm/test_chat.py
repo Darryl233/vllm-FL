@@ -14,7 +14,7 @@ from ..openai.test_vision import TEST_IMAGE_ASSETS
 def text_llm():
     # pytest caches the fixture so we use weakref.proxy to
     # enable garbage collection
-    llm = LLM(model="meta-llama/Llama-3.2-1B-Instruct",
+    llm = LLM(model="Qwen/Qwen3-0.6B",
               enforce_eager=True,
               seed=0)
 
