@@ -2,9 +2,9 @@ name: Unit Tests CUDA
 
 on:
   push:
-    branches: main-dev
+    branches: main
   pull_request:
-    branches: main-dev
+    branches: main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.actor }}
@@ -15,7 +15,7 @@ jobs:
     defaults:
       run:
         shell: bash
-    runs-on: [ self-hosted, Linux, X64, gpu-8, nviida ]
+    runs-on: [ self-hosted, Linux, X64, gpu-8, nvidia ]
     container:
       image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
       options: --gpus all --shm-size=500g --hostname vllm_fl_cicd --user root --ulimit nofile=65535:65535
