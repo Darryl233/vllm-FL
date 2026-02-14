@@ -62,13 +62,48 @@ jobs:
 
           source /opt/miniconda3/etc/profile.d/conda.sh
           conda activate flagscale-inference
-          source .github/scripts/load_config.sh
 
-          UNIT_SUBSETS="benchmarks compile config cuda detokenizer engine model_executor multimodal plugins_tests runai_model_streamer_test source_dir"
-          for subset in $UNIT_SUBSETS; do
+          CONFIG_FILE=".github/configs/unit.yml"
+          CONFIG_KEY="unit-conf"
+          SUBSETS="benchmarks compile config cuda detokenizer engine model_executor multimodal plugins_tests runai_model_streamer_test source_dir"
+
+          run_subset() {
+            local subset=$1
+            local depth_json path_json test_dir depth
+            depth_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.depth" "$CONFIG_FILE")
+            path_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.path" "$CONFIG_FILE")
+            if [ "$depth_json" = "all" ]; then
+              depth=$(find tests -type d | awk -F/ '{print NF-1}' | sort -nr | head -n 1)
+            else
+              depth=$depth_json
+            fi
+            if [ "$path_json" != "null" ] && [ -n "$path_json" ]; then
+              test_dir=$path_json
+            elif [ "$subset" = "source_dir" ]; then
+              test_dir=tests
+            else
+              test_dir=tests/$subset
+            fi
+            local ignore_json deselect_json ignore deselect test_files
+            ignore_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.ignore" "$CONFIG_FILE")
+            deselect_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.deselect" "$CONFIG_FILE")
+            if [ "$(echo "$ignore_json" | jq 'length')" -gt 0 ]; then
+              ignore=$(echo "$ignore_json" | jq -r '.[] | "--ignore=\(.)"' | tr '\n' ' ')
+            else
+              ignore="pass"
+            fi
+            if [ "$(echo "$deselect_json" | jq 'length')" -gt 0 ]; then
+              deselect=$(echo "$deselect_json" | jq -r '.[] | "--deselect=\(.)"' | tr '\n' ' ')
+            else
+              deselect="pass"
+            fi
+            test_files=$(find "$test_dir" -mindepth 1 -maxdepth "$depth" -type f -name "test_*.py" | tr '\n' ',' | sed 's/,/ /g; s/ $//')
             echo "=========================================="
             echo "Unit test subset: $subset"
             echo "=========================================="
-            eval $(LOAD_CONFIG_ECHO=1 load_config "$subset" ".github/configs/unit.yml" "unit-conf")
-            torchrun --nproc_per_node=8 -m pytest -q -x -p no:warnings $IGNORE $DESELECT $TEST_FILES
+            torchrun --nproc_per_node=8 -m pytest -x -p no:warnings $ignore $deselect $test_files
+          }
+
+          for subset in $SUBSETS; do
+            run_subset "$subset"
           done
