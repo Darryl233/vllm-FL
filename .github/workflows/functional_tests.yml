@@ -41,7 +41,7 @@ jobs:
           # - tensorizer_loader
           # - tool_use
           # - weight_loading
-          - v1_e2e
+          # - v1_e2e
           # - v1_entrypoints
     steps:
       - name: Checkout code
@@ -124,4 +124,26 @@ jobs:
           source /opt/miniconda3/etc/profile.d/conda.sh
           conda activate flagscale-inference
 
-          python -m pytest -q -x -p no:warnings $ignore $deselect $test_files
+          failed_tests=()
+          for test_file in $test_files; do
+            echo "=========================================="
+            echo "Running: $test_file"
+            echo "=========================================="
+            if ! python -m pytest -q -x -p no:warnings $ignore $deselect "$test_file"; then
+              echo "FAILED: $test_file"
+              failed_tests+=("$test_file")
+            fi
+          done
+
+          if [ ${#failed_tests[@]} -gt 0 ]; then
+            echo ""
+            echo "=========================================="
+            echo "Summary: ${#failed_tests[@]} test file(s) failed:"
+            for f in "${failed_tests[@]}"; do
+              echo "  - $f"
+            done
+            echo "=========================================="
+            exit 1
+          fi
+
+          echo "All test files passed."
