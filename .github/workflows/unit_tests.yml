@@ -58,6 +58,8 @@ jobs:
           python -c 'import vllm._C; print("vllm._C imported successfully")' 
 
       - name: Run unit tests
+        env:
+          https_proxy: http://10.1.7.116:7890
         run: |
           set -euo pipefail
 
