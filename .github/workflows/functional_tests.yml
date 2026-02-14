@@ -129,8 +129,14 @@ jobs:
             echo "=========================================="
             echo "Running: $test_file"
             echo "=========================================="
-            if ! python -m pytest -q -x -p no:warnings $ignore $deselect "$test_file"; then
-              echo "FAILED: $test_file"
+            set +e
+            python -m pytest -q -x -p no:warnings $ignore $deselect "$test_file"
+            exit_code=$?
+            set -e
+            if [ $exit_code -eq 5 ]; then
+              echo "SKIPPED (no tests collected): $test_file"
+            elif [ $exit_code -ne 0 ]; then
+              echo "FAILED (exit code $exit_code): $test_file"
               failed_tests+=("$test_file")
             fi
           done
