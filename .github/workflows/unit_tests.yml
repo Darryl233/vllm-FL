@@ -41,6 +41,8 @@ jobs:
 
       - name: Install dependencies and build vLLM
         timeout-minutes: 90
+        env:
+            https_proxy: http://10.1.7.116:7890
         run: |
           set -euo pipefail
 
