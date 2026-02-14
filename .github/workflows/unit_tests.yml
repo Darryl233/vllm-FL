@@ -39,6 +39,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install auxiliary tools
+        env:
+          https_proxy: http://10.1.7.116:7890
         timeout-minutes: 5
         run: |
           set -euo pipefail
