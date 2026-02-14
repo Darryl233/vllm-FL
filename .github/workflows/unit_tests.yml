@@ -43,6 +43,7 @@ jobs:
         timeout-minutes: 90
         env:
             https_proxy: http://10.1.7.116:7890
+            CMAKE_BUILD_PARALLEL_LEVEL: 4
         run: |
           set -euo pipefail
 
@@ -54,9 +55,7 @@ jobs:
           pip install -e . -vvv
 
           python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
-          python -c 'import vllm._C; print("vllm._C imported successfully")'
-        env:
-          CMAKE_BUILD_PARALLEL_LEVEL: 4
+          python -c 'import vllm._C; print("vllm._C imported successfully")' 
 
       - name: Run unit tests
         run: |
