@@ -1,14 +1,7 @@
 name: Functional Tests CUDA
 
 on:
-  push:
-    branches: main
-  pull_request:
-    branches: main
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.actor }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   functional_test:
@@ -24,25 +17,9 @@ jobs:
       matrix:
         subset:
           - basic_correctness
-          # - distributed
           - entrypoints_llm
-          # - entrypoints_openai
-          # - entrypoints_pooling
           - entrypoints_offline_mode
-          # - evals
-          # - fastsafetensors_loader
-          # - kv_transfer
-          # - lora
-          # - mistral_tool_use
-          # - models
-          # - quantization
-          # - samplers
-          # - speculative_decoding
-          # - tensorizer_loader
-          # - tool_use
-          # - weight_loading
           - v1_e2e
-          # - v1_entrypoints
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,7 +37,6 @@ jobs:
 
           [ -w "$BIN_DIR" ] || { echo "Error: $BIN_DIR is not writable!"; exit 1; }
 
-          # Install mikefarah/yq (v4) for YAML parsing
           echo "Installing yq $YQ_VERSION..."
           curl -sSL --retry 3 -k "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_amd64" -o "$BIN_DIR/yq"
           chmod +x "$BIN_DIR/yq"
@@ -74,18 +50,14 @@ jobs:
       - name: Install dependencies and build vLLM
         timeout-minutes: 90
         run: |
-          # Activate Conda Environment
           source /opt/miniconda3/etc/profile.d/conda.sh
           conda activate flagscale-inference
 
-          # Install Requirements
           pip install -r requirements/cuda.txt
           pip install -r requirements/common.txt
-          # Install vLLM in Editable Mode
           pip install -e . -vvv
           pip install transformers==4.55.2 huggingface-hub==0.34.3
 
-          # Verify vLLM Installation
           python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
           python -c 'import vllm._C; print("vllm._C imported successfully")'
         env:
@@ -100,15 +72,10 @@ jobs:
 
           if [ ! -f "$CONFIG_FILE" ]; then
             echo "❌ Error: Platform configuration file not found: $CONFIG_FILE"
-            echo "Available configs:"
-            ls -la .github/configs/
             exit 1
           fi
 
-           # Source the platform config loading script
           source .github/scripts/load_config.sh
-
-          # Load configuration and group tests by task
           load_config ${{ matrix.subset }} "$CONFIG_FILE" functional-conf
 
       - name: Run test for ${{ matrix.subset }}
