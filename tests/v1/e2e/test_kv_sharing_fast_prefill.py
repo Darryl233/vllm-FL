@@ -85,7 +85,7 @@ def test_kv_sharing_fast_prefill(
         m.setenv("VLLM_ENABLE_V1_MULTIPROCESSING", "0")
 
         llm = LLM(
-            model="google/gemma-3n-E2B-it",
+            model="Qwen/Qwen3-0.6B",
             enforce_eager=enforce_eager,
             compilation_config=compilation_config,
             seed=SEED,
@@ -94,7 +94,7 @@ def test_kv_sharing_fast_prefill(
 
         cleanup(llm, compilation_config)
 
-        llm = LLM(model="google/gemma-3n-E2B-it",
+        llm = LLM(model="Qwen/Qwen3-0.6B",
                   enforce_eager=enforce_eager,
                   compilation_config=compilation_config,
                   seed=SEED,

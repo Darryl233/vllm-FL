@@ -1,0 +1,112 @@
+name: Unit Tests CUDA
+
+on:
+  workflow_call:
+
+jobs:
+  unit_test:
+    defaults:
+      run:
+        shell: bash
+    runs-on: [ self-hosted, Linux, X64, gpu-8, nviida ]
+    container:
+      image: harbor.baai.ac.cn/flagscale/cuda12.8.1-torch2.8.0-python3.10-vllm0.11.0_fl.0.1:20260205
+      options: --gpus all --shm-size=500g --hostname vllm_fl_cicd --user root --ulimit nofile=65535:65535
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install auxiliary tools
+        env:
+          https_proxy: http://10.1.7.116:7890
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+
+          YQ_VERSION="v4.45.1"
+          JQ_VERSION="1.7.1"
+          BIN_DIR="/usr/local/bin"
+
+          [ -w "$BIN_DIR" ] || { echo "Error: $BIN_DIR is not writable!"; exit 1; }
+
+          echo "Installing yq $YQ_VERSION..."
+          curl -sSL --retry 3 -k "https://github.com/mikefarah/yq/releases/download/$YQ_VERSION/yq_linux_amd64" -o "$BIN_DIR/yq"
+          chmod +x "$BIN_DIR/yq"
+          yq --version
+
+          echo "Installing jq $JQ_VERSION..."
+          curl -sSL --retry 3 -k "https://github.com/jqlang/jq/releases/download/jq-$JQ_VERSION/jq-linux-amd64" -o "$BIN_DIR/jq"
+          chmod +x "$BIN_DIR/jq"
+          jq --version
+
+      - name: Install dependencies and build vLLM
+        timeout-minutes: 90
+        env:
+            https_proxy: http://10.1.7.116:7890
+            CMAKE_BUILD_PARALLEL_LEVEL: 4
+        run: |
+          set -euo pipefail
+
+          source /opt/miniconda3/etc/profile.d/conda.sh
+          conda activate flagscale-inference
+
+          pip install -r requirements/cuda.txt
+          pip install -r requirements/common.txt
+          pip install -e . -vvv
+
+          python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')"
+          python -c 'import vllm._C; print("vllm._C imported successfully")' 
+
+      - name: Run unit tests
+        env:
+          https_proxy: http://10.1.7.116:7890
+        run: |
+          set -euo pipefail
+
+          source /opt/miniconda3/etc/profile.d/conda.sh
+          conda activate flagscale-inference
+
+          CONFIG_FILE=".github/configs/unit.yml"
+          CONFIG_KEY="unit-conf"
+          SUBSETS="benchmarks compile config cuda detokenizer engine model_executor multimodal plugins_tests runai_model_streamer_test source_dir"
+
+          run_subset() {
+            local subset=$1
+            local depth_json path_json test_dir depth
+            depth_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.depth" "$CONFIG_FILE")
+            path_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.path" "$CONFIG_FILE")
+            if [ "$depth_json" = "all" ]; then
+              depth=$(find tests -type d | awk -F/ '{print NF-1}' | sort -nr | head -n 1)
+            else
+              depth=$depth_json
+            fi
+            if [ "$path_json" != "null" ] && [ -n "$path_json" ]; then
+              test_dir=$path_json
+            elif [ "$subset" = "source_dir" ]; then
+              test_dir=tests
+            else
+              test_dir=tests/$subset
+            fi
+            local ignore_json deselect_json ignore deselect test_files
+            ignore_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.ignore" "$CONFIG_FILE")
+            deselect_json=$(yq -r -o=json -I=0 ".$CONFIG_KEY.$subset.deselect" "$CONFIG_FILE")
+            if [ "$(echo "$ignore_json" | jq 'length')" -gt 0 ]; then
+              ignore=$(echo "$ignore_json" | jq -r '.[] | "--ignore=\(.)"' | tr '\n' ' ')
+            else
+              ignore="pass"
+            fi
+            if [ "$(echo "$deselect_json" | jq 'length')" -gt 0 ]; then
+              deselect=$(echo "$deselect_json" | jq -r '.[] | "--deselect=\(.)"' | tr '\n' ' ')
+            else
+              deselect="pass"
+            fi
+            test_files=$(find "$test_dir" -mindepth 1 -maxdepth "$depth" -type f -name "test_*.py" | tr '\n' ',' | sed 's/,/ /g; s/ $//')
+            echo "=========================================="
+            echo "Unit test subset: $subset"
+            echo "=========================================="
+            torchrun --nproc_per_node=8 -m pytest -x -p no:warnings $ignore $deselect $test_files
+          }
+
+          for subset in $SUBSETS; do
+            run_subset "$subset"
+          done

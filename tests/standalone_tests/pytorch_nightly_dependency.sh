@@ -4,30 +4,27 @@
 set -e
 set -x
 
-cd /vllm-workspace/
+cd ..
 
-rm -rf .venv
-
-uv venv .venv
-
-source .venv/bin/activate
+source /opt/miniconda3/etc/profile.d/conda.sh
+conda activate flagscale-inference
 
 # check the environment
-uv pip freeze
+pip freeze
 
 echo ">>> Installing nightly torch packages"
-uv pip install --quiet torch torchvision torchaudio --pre --extra-index-url https://download.pytorch.org/whl/nightly/cu128
+pip install --quiet torch torchvision torchaudio --pre --extra-index-url https://download.pytorch.org/whl/nightly/cu128
 
 echo ">>> Capturing torch-related versions before requirements install"
-uv pip freeze | grep -E '^torch|^torchvision|^torchaudio' | sort > before.txt
+pip freeze | grep -E '^torch|^torchvision|^torchaudio' | sort > before.txt
 echo "Before:"
 cat before.txt
 
 echo ">>> Installing requirements/nightly_torch_test.txt"
-uv pip install --quiet -r requirements/nightly_torch_test.txt
+pip install --quiet -r requirements/nightly_torch_test.txt
 
 echo ">>> Capturing torch-related versions after requirements install"
-uv pip freeze | grep -E '^torch|^torchvision|^torchaudio' | sort > after.txt
+pip freeze | grep -E '^torch|^torchvision|^torchaudio' | sort > after.txt
 echo "After:"
 cat after.txt
 

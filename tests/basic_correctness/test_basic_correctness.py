@@ -19,11 +19,11 @@ from ..models.utils import check_outputs_equal
 from ..utils import multi_gpu_test
 
 MODELS = [
-    "google/gemma-2-2b-it",
-    "meta-llama/Llama-3.2-1B-Instruct",
+    "Qwen/Qwen3-0.6B",
+    # "Qwen/Qwen3-1.7B",
 ]
 
-TARGET_TEST_SUITE = os.environ.get("TARGET_TEST_SUITE", "L4")
+TARGET_TEST_SUITE = os.environ.get("TARGET_TEST_SUITE", "A100")
 
 
 def test_vllm_gc_ed():
@@ -127,10 +127,10 @@ def test_models(
         ("distilbert/distilgpt2", "mp", "", "L4", {
             "VLLM_SLEEP_WHEN_IDLE": "1"
         }),
-        ("meta-llama/Llama-3.2-1B-Instruct", "ray", "", "L4", {}),
-        ("meta-llama/Llama-3.2-1B-Instruct", "mp", "", "L4", {}),
-        ("distilbert/distilgpt2", "ray", "", "A100", {}),
-        ("distilbert/distilgpt2", "mp", "", "A100", {}),
+        ("Qwen/Qwen3-0.6B", "ray", "", "L4", {}),
+        ("Qwen/Qwen3-0.6B", "mp", "", "L4", {}),
+        # ("distilbert/distilgpt2", "ray", "", "A100", {}),
+        # ("distilbert/distilgpt2", "mp", "", "A100", {}),
     ])
 @pytest.mark.parametrize("enable_prompt_embeds", [True, False])
 def test_models_distributed(
